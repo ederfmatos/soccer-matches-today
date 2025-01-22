@@ -21,12 +21,12 @@ func main() {
 func run() error {
 	httpClient := NewHttpClient("https://api.football-data.org", os.Getenv("AUTH_TOKEN"))
 
-	currentDate := time.Now().Format("2006-01-02")
+	currentDate := time.Now().Add(time.Hour * -24).Format("2006-01-02")
 	matchesByCompetition := make(map[string][]Match)
 	competitions := map[string]string{
 		"CL":  "UEFA Champions League",
 		"BL1": "Bundesliga",
-		"BSA": "Brasileirão Seria A",
+		"BSA": "Brasileirão Serie A",
 		"PD":  "La Liga",
 		"FL1": "Ligue 1",
 		"PPL": "Liga Portuguesa",
@@ -40,27 +40,31 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("list matches to %s: %v", competitionName, err)
 		}
+
 		var matchesResponse ListMatchesResponse
 		if err = json.Unmarshal(response, &matchesResponse); err != nil {
 			return fmt.Errorf("unmarshal matches to %s: %v", competitionName, err)
 		}
 		log.Printf("Matches to %s fetched successfully", competitionName)
 
-		for _, match := range matchesResponse.Matches {
-			matchesByCompetition[competitionName] = append(matchesByCompetition[competitionName], Match{
+		matchesByCompetition[competitionName] = make([]Match, len(matchesResponse.Matches))
+		for i, match := range matchesResponse.Matches {
+			matchesByCompetition[competitionName][i] = Match{
 				Competition: Competition{
 					Name:  match.Competition.Name,
 					Image: match.Competition.Emblem,
 				},
-				StartAt:  match.UtcDate.In(time.Local),
-				HomeTeam: match.HomeTeam.Name,
-				AwayTeam: match.AwayTeam.Name,
-			})
+				StartAt:   match.UtcDate.In(time.Local),
+				HomeTeam:  match.HomeTeam.Name,
+				AwayTeam:  match.AwayTeam.Name,
+				HomeScore: match.Score.FullTime.Home,
+				AwayScore: match.Score.FullTime.Away,
+			}
 		}
 	}
 
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("# Jogos de Hoje - %s\n\n", time.Now().Format("02/01/2006")))
+	builder.WriteString(fmt.Sprintf("# Jogos de Hoje - %s\n\n", time.Now().Add(time.Hour*-24).Format("02/01/2006")))
 
 	if len(matchesByCompetition) == 0 {
 		log.Println("No matches for today")
@@ -78,7 +82,11 @@ func run() error {
 		builder.WriteString("\n\n")
 
 		for _, match := range matches {
-			builder.WriteString(fmt.Sprintf("%s x %s - %s\n\n", match.HomeTeam, match.AwayTeam, match.StartAt.Format("15:04")))
+			if match.HomeScore != nil && match.AwayScore != nil {
+				builder.WriteString(fmt.Sprintf("%s %d x %d %s - %s\n\n", match.HomeTeam, *match.HomeScore, *match.AwayScore, match.AwayTeam, match.StartAt.Format("15:04")))
+			} else {
+				builder.WriteString(fmt.Sprintf("%s x %s - %s\n\n", match.HomeTeam, match.AwayTeam, match.StartAt.Format("15:04")))
+			}
 		}
 	}
 

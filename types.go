@@ -8,6 +8,8 @@ type (
 		StartAt     time.Time   `json:"start_at"`
 		HomeTeam    string      `json:"home_team"`
 		AwayTeam    string      `json:"away_team"`
+		HomeScore   *int        `json:"home_score"`
+		AwayScore   *int        `json:"away_score"`
 	}
 
 	Competition struct {
@@ -28,16 +30,13 @@ type (
 			AwayTeam struct {
 				Name string `json:"name"`
 			} `json:"awayTeam"`
-		} `json:"matches"`
-	}
 
-	ListCompetitionsResponse struct {
-		Competitions []struct {
-			Area struct {
-				Name string `json:"name"`
-			} `json:"area"`
-			Name string `json:"name"`
-			Code string `json:"code"`
-		} `json:"competitions"`
+			Score struct {
+				FullTime struct {
+					Home *int `json:"home"`
+					Away *int `json:"away"`
+				} `json:"fullTime"`
+			} `json:"score"`
+		} `json:"matches"`
 	}
 )

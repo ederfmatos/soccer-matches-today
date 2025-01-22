@@ -32,7 +32,7 @@ func SendMessageToDiscord(message string) error {
 	}
 	resp, err := client.Post(url, "application/json", bytes.NewBuffer(data))
 	if err != nil {
-		return fmt.Errorf("erro ao enviar a mensagem para o Discord: %v", err)
+		return fmt.Errorf("fail to send message: %v", err)
 	}
 	defer resp.Body.Close()
 
