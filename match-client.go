@@ -31,7 +31,7 @@ func NewMatchClient() *MatchClientDelegator {
 
 func (m *MatchClientDelegator) ListMatches() (map[Competition][]Match, error) {
 	matchesByCompetition := make(map[Competition][]Match)
-	currentDate := time.Now()
+	currentDate := time.Now().In(brazilLocation)
 
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}

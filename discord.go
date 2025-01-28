@@ -1,43 +1,37 @@
 package main
 
 import (
-	"bytes"
-	"crypto/tls"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
 )
 
-type DiscordMessage struct {
-	Content string `json:"content"`
+type (
+	Notificator interface {
+		SendMessage(message string) error
+	}
+
+	Discord struct {
+		httpClient *HttpClient
+	}
+
+	DiscordMessage struct {
+		Content string `json:"content"`
+	}
+)
+
+func NewNotificator() Notificator {
+	return &Discord{
+		httpClient: NewHttpClient("https://discord.com/api/webhooks/1332046251893456967/wNWKwY1MVUM-hlPDJiB0TmsRrEE8AJthbT2qpIC31w0fXZLB2kDtjHTroOxpZC3c-scj"),
+	}
 }
 
-func SendMessageToDiscord(message string) error {
-	url := os.Getenv("DISCORD_WEBHOOK_URL")
-
+func (d Discord) SendMessage(message string) error {
 	payload := DiscordMessage{
 		Content: message,
 	}
 
-	data, err := json.Marshal(payload)
+	_, err := d.httpClient.Post("", payload)
 	if err != nil {
-		return fmt.Errorf("marshal discord message: %v", err)
-	}
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(data))
-	if err != nil {
-		return fmt.Errorf("fail to send message: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("fail to send message, response status: %d", resp.StatusCode)
+		return fmt.Errorf("send message to discord: %v", err)
 	}
 
 	return nil

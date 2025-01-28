@@ -54,7 +54,7 @@ func (c *UOLClient) ListMatches(competition Competition, date time.Time) ([]Matc
 	c.mutex.Lock()
 
 	if c.uolResponse == nil {
-		response, err := c.httpClient.Do(`?loadComponent=api&data={"module":"tools","api":"json","method":"open","busca":"commons.uol.com.br/sistemas/esporte/modalidades/futebol/campeonatos/etc/jogos/resultados_e_proximos/dados.json"}`)
+		response, err := c.httpClient.Get(`?loadComponent=api&data={"module":"tools","api":"json","method":"open","busca":"commons.uol.com.br/sistemas/esporte/modalidades/futebol/campeonatos/etc/jogos/resultados_e_proximos/dados.json"}`)
 		if err != nil {
 			return nil, fmt.Errorf("list matches: %v", err)
 		}

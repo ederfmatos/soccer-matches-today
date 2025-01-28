@@ -61,7 +61,7 @@ func (c FootballDataClient) ListMatches(competition Competition, date time.Time)
 
 	currentDate := date.Format("2006-01-02")
 	url := fmt.Sprintf("/v4/competitions/%s/matches?dateFrom=%s&dateTo=%s", competitionCode, currentDate, currentDate)
-	response, err := c.httpClient.Do(url)
+	response, err := c.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("list matches to %s: %v", competition, err)
 	}
