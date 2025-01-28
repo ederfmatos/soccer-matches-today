@@ -1,17 +1,12 @@
 package main
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
-	"os"
+	"sort"
 	"strings"
-	"sync"
 	"time"
 )
-
-var httpClient = NewHttpClient("https://api.football-data.org", os.Getenv("AUTH_TOKEN"))
 
 func main() {
 	log.Println("Starting application")
@@ -23,51 +18,10 @@ func main() {
 }
 
 func run() error {
-
-	competitions := map[string]string{
-		"CL":  "UEFA Champions League",
-		"BL1": "Bundesliga",
-		"BSA": "Brasileirão Serie A",
-		"PD":  "La Liga",
-		"FL1": "Ligue 1",
-		"PPL": "Liga Portuguesa",
-		"SA":  "Serie A Italiana",
-		"PL":  "Premier League",
-		"CLI": "Copa Libertadores",
-	}
-	matchesByCompetition := make(map[string][]Match)
-
-	wg := sync.WaitGroup{}
-	mutex := sync.Mutex{}
-	channel := make(chan struct{}, 3)
-	var errs []error
-
-	for competitionCode, competitionName := range competitions {
-		wg.Add(1)
-
-		go func(code, name string) {
-			channel <- struct{}{}
-			defer func() {
-				<-channel
-				wg.Done()
-			}()
-
-			matches, err := listMatches(code, name)
-
-			mutex.Lock()
-			defer mutex.Unlock()
-
-			if err != nil {
-				errs = append(errs, err)
-				return
-			}
-			matchesByCompetition[name] = matches
-		}(competitionCode, competitionName)
-	}
-	wg.Wait()
-
-	if len(errs) > 0 {
-		return errors.Join(errs...)
+	matchesClient := NewMatchClient()
+	matchesByCompetition, err := matchesClient.ListMatches()
+	if err != nil {
+		return fmt.Errorf("list matches: %v", err)
 	}
 
 	message := createMessage(matchesByCompetition)
@@ -78,65 +32,38 @@ func run() error {
 	return nil
 }
 
-func listMatches(competitionCode, competitionName string) ([]Match, error) {
-	log.Printf("Fetching matches to %s", competitionName)
-
-	currentDate := time.Now().Format("2006-01-02")
-	url := fmt.Sprintf("/v4/competitions/%s/matches?dateFrom=%s&dateTo=%s", competitionCode, currentDate, currentDate)
-	response, err := httpClient.Do(url)
-	if err != nil {
-		return nil, fmt.Errorf("list matches to %s: %v", competitionName, err)
-	}
-
-	var matchesResponse ListMatchesResponse
-	if err = json.Unmarshal(response, &matchesResponse); err != nil {
-		return nil, fmt.Errorf("unmarshal matches to %s: %v", competitionName, err)
-	}
-	defer log.Printf("Matches to %s fetched successfully", competitionName)
-
-	matches := make([]Match, len(matchesResponse.Matches))
-	for i, match := range matchesResponse.Matches {
-		matches[i] = Match{
-			Competition: Competition{
-				Name:  match.Competition.Name,
-				Image: match.Competition.Emblem,
-			},
-			StartAt:   match.UtcDate.In(time.Local),
-			HomeTeam:  match.HomeTeam.Name,
-			AwayTeam:  match.AwayTeam.Name,
-			HomeScore: match.Score.FullTime.Home,
-			AwayScore: match.Score.FullTime.Away,
-		}
-	}
-	return matches, nil
-}
-
-func createMessage(matchesByCompetition map[string][]Match) string {
+func createMessage(matchesByCompetition map[Competition][]Match) string {
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("# Jogos de Hoje - %s\n\n", time.Now().Format("02/01/2006")))
+	builder.WriteString(fmt.Sprintf("# :soccer: Jogos de Hoje - %s :soccer: \n\n", time.Now().Format("02/01/2006")))
 
-	if len(matchesByCompetition) == 0 {
-		log.Println("No matches for today")
-		return "Não existem jogos para hoje."
-	}
-
+	matchesCount := 0
 	for competition, matches := range matchesByCompetition {
 		if len(matches) == 0 {
 			continue
 		}
+		matchesCount += len(matches)
+
+		sort.Slice(matches, func(i, j int) bool {
+			return matches[i].StartAt.Before(matches[j].StartAt)
+		})
 
 		builder.WriteString(fmt.Sprintf("## %s \n\n", competition))
 		for _, match := range matches {
 			builder.WriteString(createMessageToMatch(match))
 		}
 	}
+
+	if matchesCount == 0 {
+		builder.WriteString("Não existem jogos para hoje")
+	}
+
 	return builder.String()
 }
 
 func createMessageToMatch(match Match) string {
-	startAt := match.StartAt.Format("15:04")
+	startAt := match.StartAt.Format("15h04")
 	if match.HomeScore == nil || match.AwayScore == nil {
-		return fmt.Sprintf("**%s** x **%s** - :clock1: %s\n\n", match.HomeTeam, match.AwayTeam, startAt)
+		return fmt.Sprintf(":clock1: %s - **%s** x **%s**\n", startAt, match.HomeTeam, match.AwayTeam)
 	}
-	return fmt.Sprintf("**%s** %d x %d **%s** - :clock1: %s\n\n", match.HomeTeam, *match.HomeScore, *match.AwayScore, match.AwayTeam, startAt)
+	return fmt.Sprintf(":clock1: %s - **%s** %d x %d **%s**\n", startAt, match.HomeTeam, *match.HomeScore, *match.AwayScore, match.AwayTeam)
 }

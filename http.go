@@ -7,13 +7,24 @@ import (
 	"net/http"
 )
 
-type HttpClient struct {
-	authToken string
-	baseURL   string
-}
+type (
+	HttpClient struct {
+		baseURL string
+		headers map[string]string
+	}
 
-func NewHttpClient(baseURL, authToken string) *HttpClient {
-	return &HttpClient{baseURL: baseURL, authToken: authToken}
+	HttpClientOption func(*HttpClient)
+)
+
+func NewHttpClient(baseURL string, options ...HttpClientOption) *HttpClient {
+	client := &HttpClient{
+		baseURL: baseURL,
+		headers: make(map[string]string),
+	}
+	for _, option := range options {
+		option(client)
+	}
+	return client
 }
 
 func (h HttpClient) Do(path string) ([]byte, error) {
@@ -22,7 +33,9 @@ func (h HttpClient) Do(path string) ([]byte, error) {
 		return nil, fmt.Errorf("make request: %v", err)
 	}
 
-	req.Header.Add("x-auth-token", h.authToken)
+	for key, value := range h.headers {
+		req.Header.Add(key, value)
+	}
 
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -42,4 +55,10 @@ func (h HttpClient) Do(path string) ([]byte, error) {
 	}
 
 	return body, nil
+}
+
+func WithHeader(name, value string) HttpClientOption {
+	return func(hc *HttpClient) {
+		hc.headers[name] = value
+	}
 }
