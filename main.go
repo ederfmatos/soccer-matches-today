@@ -18,7 +18,7 @@ func main() {
 	log.Println("Finish application")
 }
 
-func run(notificator Notificator) error {
+func run(notificator Notifier) error {
 	matchesClient := NewMatchClient()
 	matchesByCompetition, err := matchesClient.ListMatches()
 	if err != nil {
