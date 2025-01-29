@@ -1,10 +1,9 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"github.com/ederfmatos/go-concurrency/pkg/concurrency"
 	"log"
-	"sync"
 	"time"
 )
 
@@ -33,46 +32,32 @@ func (m *MatchClientDelegator) ListMatches() (map[Competition][]Match, error) {
 	matchesByCompetition := make(map[Competition][]Match)
 	currentDate := time.Now().In(brazilLocation)
 
-	mutex := sync.Mutex{}
-	wg := sync.WaitGroup{}
-	errs := make([]error, 0)
-
-	for _, competition := range competitions {
-		wg.Add(1)
-
-		go func(competition Competition, wg *sync.WaitGroup) {
-			defer wg.Done()
-
-			for _, client := range m.clients {
-				if !client.Contains(competition) {
-					continue
-				}
-
-				log.Printf("Fetching Matches to %s using %v\n", competition, client.Name())
-
-				matches, err := client.ListMatches(competition, currentDate)
-
-				if err != nil {
-					mutex.Lock()
-					errs = append(errs, fmt.Errorf("list matches: %v", err))
-					mutex.Unlock()
-					continue
-				}
-
-				if len(matches) != 0 {
-					mutex.Lock()
-					matchesByCompetition[competition] = matches
-					mutex.Unlock()
-					return
-				}
+	matches, err := concurrency.ForEach[Competition, []Match](competitions, 4, func(competition Competition) ([]Match, error) {
+		for _, client := range m.clients {
+			if !client.Contains(competition) {
+				continue
 			}
-		}(competition, &wg)
+			log.Printf("Fetching Matches to %s using %v\n", competition, client.Name())
+
+			matches, err := client.ListMatches(competition, currentDate)
+
+			if err != nil {
+				return nil, fmt.Errorf("list matches: %v", err)
+			}
+			return matches, nil
+		}
+
+		return nil, nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
-	wg.Wait()
-
-	if len(errs) > 0 {
-		return nil, errors.Join(errs...)
+	for _, items := range matches {
+		if len(items) > 0 {
+			matchesByCompetition[items[0].Competition] = items
+		}
 	}
 
 	return matchesByCompetition, nil

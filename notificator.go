@@ -1,9 +1,8 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"log"
+	"github.com/ederfmatos/go-concurrency/pkg/concurrency"
 	"os"
 	"strings"
 )
@@ -78,19 +77,12 @@ func (t Telegram) SendMessage(message string) error {
 }
 
 func (c ComposeNotifier) SendMessage(message string) error {
-	var errs = make([]error, 0)
-	for _, notifier := range c.notifiers {
-		if err := notifier.SendMessage(message); err != nil {
-			errs = append(errs, err)
-		}
-	}
+	_, err := concurrency.ForEach(c.notifiers, 2, func(notifier Notifier) (any, error) {
+		return nil, notifier.SendMessage(message)
+	})
 
-	if len(errs) == len(c.notifiers) {
-		return fmt.Errorf("fail to send messages: %v", errors.Join(errs...))
-	}
-
-	if len(errs) > 0 {
-		log.Printf("Error on send a message: %v. But at least one was sent\n", errors.Join(errs...))
+	if err != nil {
+		return fmt.Errorf("fail to send messages: %v", err)
 	}
 
 	return nil
