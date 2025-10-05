@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/ederfmatos/go-concurrency/pkg/concurrency"
 	"os"
 	"strings"
+
+	"github.com/ederfmatos/go-concurrency/pkg/concurrency"
 )
 
 type (
@@ -35,13 +36,18 @@ type (
 )
 
 func NewNotificator() Notifier {
-	discord := &Discord{
-		httpClient: NewHttpClient(os.Getenv("DISCORD_WEBHOOK_URL")),
+	var notifiers []Notifier
+	if os.Getenv("DISCORD_WEBHOOK_URL") != "" {
+		notifiers = append(notifiers, &Discord{
+			httpClient: NewHttpClient(os.Getenv("DISCORD_WEBHOOK_URL")),
+		})
 	}
-	telegram := &Telegram{
-		httpClient: NewHttpClient(fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", os.Getenv("TELEGRAM_BOT_TOKEN"))),
+	if os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
+		notifiers = append(notifiers, &Telegram{
+			httpClient: NewHttpClient(fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", os.Getenv("TELEGRAM_BOT_TOKEN"))),
+		})
 	}
-	return &ComposeNotifier{notifiers: []Notifier{discord, telegram}}
+	return &ComposeNotifier{notifiers: notifiers}
 }
 
 func (d Discord) SendMessage(message string) error {

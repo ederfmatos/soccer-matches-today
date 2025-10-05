@@ -46,6 +46,9 @@ func NewUOLClient() *UOLClient {
 			"72":  LaLiga,
 			"79":  PremierLeague,
 			"81":  Italiano,
+			"30":  Brasileirao,
+			"6":   EliminatoriasEuropeias,
+			"142": AmistososSelecaoBrasileira,
 		},
 	}
 }

@@ -3,17 +3,19 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
+	"os"
 	"sort"
 	"strings"
-	"time"
 )
 
 func main() {
-	log.Println("Starting application")
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger.Info("Starting application", "time", Now())
 	notificator := NewNotificator()
 	if err := run(notificator); err != nil {
 		_ = notificator.SendMessage(fmt.Sprintf("Erro ao buscar os jogos de hoje: %s", err.Error()))
-		log.Fatal(err)
+		logger.Error("Error running application", "error", err)
 	}
 	log.Println("Finish application")
 }
@@ -35,7 +37,7 @@ func run(notificator Notifier) error {
 
 func createMessage(matchesByCompetition map[Competition][]Match) string {
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("# Jogos de Hoje - %s \n\n", time.Now().Format("02/01/2006")))
+	builder.WriteString(fmt.Sprintf("# Jogos de Hoje - %s \n\n", Now().Format("02/01/2006")))
 
 	matchesCount := 0
 	for competition, matches := range matchesByCompetition {

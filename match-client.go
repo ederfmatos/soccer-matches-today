@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/ederfmatos/go-concurrency/pkg/concurrency"
 	"log"
 	"time"
+
+	"github.com/ederfmatos/go-concurrency/pkg/concurrency"
 )
 
 type (
@@ -23,14 +24,14 @@ func NewMatchClient() *MatchClientDelegator {
 	return &MatchClientDelegator{
 		clients: []MatchesClient{
 			NewUOLClient(),
-			NewFootballDataClient(),
+			// NewFootballDataClient(),
 		},
 	}
 }
 
 func (m *MatchClientDelegator) ListMatches() (map[Competition][]Match, error) {
 	matchesByCompetition := make(map[Competition][]Match)
-	currentDate := time.Now().In(brazilLocation)
+	currentDate := Now()
 
 	matches, err := concurrency.ForEach[Competition, []Match](competitions, 4, func(competition Competition) ([]Match, error) {
 		for _, client := range m.clients {

@@ -33,8 +33,6 @@ type (
 	}
 )
 
-var brazilLocation, _ = time.LoadLocation("America/Sao_Paulo")
-
 func NewFootballDataClient() *FootballDataClient {
 	return &FootballDataClient{
 		httpClient: NewHttpClient(
@@ -42,13 +40,13 @@ func NewFootballDataClient() *FootballDataClient {
 			WithHeader("x-auth-token", os.Getenv("AUTH_TOKEN")),
 		),
 		competitionsMap: map[Competition]string{
-			UefaChampionsLeague: "CL",
-			Bundesliga:          "BL1",
-			LaLiga:              "PD",
-			PremierLeague:       "PL",
-			Italiano:            "SA",
-			Brasileirao:         "BSA",
-			Libertadores:        "CLI",
+			// UefaChampionsLeague: "CL",
+			// Bundesliga:          "BL1",
+			// LaLiga:              "PD",
+			// PremierLeague:       "PL",
+			// Italiano:            "SA",
+			// Brasileirao:         "BSA",
+			Libertadores: "CLI",
 		},
 	}
 }
@@ -75,7 +73,7 @@ func (c FootballDataClient) ListMatches(competition Competition, date time.Time)
 	for i, match := range matchesResponse.Matches {
 		matches[i] = Match{
 			Competition: competition,
-			StartAt:     match.UtcDate.In(brazilLocation),
+			StartAt:     match.UtcDate,
 			HomeTeam:    match.HomeTeam.Name,
 			AwayTeam:    match.AwayTeam.Name,
 			HomeScore:   match.Score.FullTime.Home,

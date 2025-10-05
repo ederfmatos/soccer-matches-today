@@ -1,6 +1,2 @@
-github.com/ederfmatos/go-concurrency v0.0.0-20250128162634-b38ff0b587b1 h1:OaCdm0J0YXXH60s1X1tjb6hnBGkMTTXU3+mi6a+qVMk=
-github.com/ederfmatos/go-concurrency v0.0.0-20250128162634-b38ff0b587b1/go.mod h1:ehr48n4wYQb/E5sleYpgb1eOyQat4+rFHQovs6sjyGw=
-github.com/ederfmatos/go-concurrency v0.0.0-20250128163433-24c35ae60ad5 h1:Dr4UU+rghvXuz1llU/AXO13aewb9BBvmBS7nHFS5V/w=
-github.com/ederfmatos/go-concurrency v0.0.0-20250128163433-24c35ae60ad5/go.mod h1:ehr48n4wYQb/E5sleYpgb1eOyQat4+rFHQovs6sjyGw=
 github.com/ederfmatos/go-concurrency v1.0.0 h1:2jKyCi4IoUx9y+acUH7QPcVsqzeZYii74Ah+wSvufHM=
 github.com/ederfmatos/go-concurrency v1.0.0/go.mod h1:ehr48n4wYQb/E5sleYpgb1eOyQat4+rFHQovs6sjyGw=
