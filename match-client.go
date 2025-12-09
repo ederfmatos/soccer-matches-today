@@ -24,7 +24,7 @@ func NewMatchClient() *MatchClientDelegator {
 	return &MatchClientDelegator{
 		clients: []MatchesClient{
 			NewUOLClient(),
-			// NewFootballDataClient(),
+			NewFootballDataClient(),
 		},
 	}
 }
